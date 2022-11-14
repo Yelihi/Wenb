@@ -97,6 +97,22 @@
 <br />
 <br />
 
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/rainbow.png)
+
+<h2 id="추가기능"> :large_blue_diamond: 프로젝트 이후 추가 구현사항</h2>
+<br />
+
+<p align="justify">
+  프로젝트를 진행할 당시 아쉬웠던 부분들이 있었는데, 이후 담당하였던 Nav, Filter part 내 추가하거나 변경하고 싶었던 사항들을 반영하였습니다. 
+</p>
+
+- Nav 작업 중 햇갈렸던 변수명에 대해서 좀 더 직관적으로 정리하려고 하였습니다.
+- Nav 구조도 상 하위 컴포넌트로 전달하려는 props 가 늘어날 수 밖에 없었는데, 이에 redux 를 도입하여 상태값을 전달하는 방식으로 변경하였습니다.
+- Nav 내 Search 부분을 따로 분리하여, 서버에 검색 데이터 전달 시 전송 성공 및 실패 분기 처리를 redux-saga 를 통해 처리하였습니다.
+  <br />
+
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/rainbow.png)
+
 <h2 align="center" id="Nav.js">Nav.js</h2>
 
 <img src="public/images/readme/위엔비필터.gif" width="100%" />
@@ -313,6 +329,342 @@ useEffect(() => {
 <br />
 
 [더 자세한 내용은 블로그참조](https://rock7246.tistory.com/30)
+<br />
+
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/rainbow.png)
+
+<h2 align="center" id="Nav.js">추가 구현 사항(Nav.js)</h2>
+
+<br>
+<h3 id="main"> :scroll: Key-Point</h3>
+
+> **변수명 변경하기**
+
+<p align="justify">
+프로젝트 당시 구현하는 과정에서 다루는 모달창의 수가 많았었고, 그로 인해 화면 내 모달창 랜더유무를 결정하는 boolean 상태값을 가지는 변수들이 많았습니다.  
+<br />기능을 구현하는데 집중을 하다보니, 추후에 다시 수정하는 과정에서 어떤 상태값이 어떠한 모달창과 연결되어 있는지 파악하기 어려웠습니다. <br />
+이에 완벽하진 않아도 최대한 직관적으로 변수명 수정을 진행하였습니다.
+</p>
+
+<br />
+
+> **Before**
+
+```js
+const Nav = () => {
+  // 생략
+  // ...
+  // 변수명만으로 어떠한 모달창과 연결되는지 쉽게는 파악이 안됩니다.
+  const [toggleNavbar, setToggleNavbar] = useState(true);
+  const [profileModal, setProfileModal] = useState(false);
+  const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [signupIsOpen, setSignupIsOpen] = useState(true);
+  const [isToken, setIsToken] = useState(false);
+  // 이외 추가적으로 변경할 부분도 있었습니다.
+};
+```
+
+<br />
+
+> **After**
+
+```js
+// reducers/nav.js 내 initialState
+// 최대한 직관적으로 표현하고자 노력했습니다.
+const initialState = {
+  location: '지도표시지역',
+  guestCount: 0,
+  date: {
+    start: null,
+    end: null,
+  },
+  isToken: false,
+  isClickUserInfoButton: false, // 우측 상단 유저정보 버튼 상태
+  isOpenLoginModal: false, // login 모달창 상태
+};
+
+// reducer/search.js 내 initialState
+const initialState = {
+  data: {
+    startDay: null,
+    endDay: null,
+    selectLocation: null,
+    totalGuest: null,
+  },
+  isClickSearch: true, // 상단 검색 부분 선택 여부
+  isDateModalOpen: false,
+  isLocationModalOpen: false,
+  isGuestModalOpen: false,
+  currentModalId: 0,
+  searchForAccommodationLoading: false, // 최종 숙박시설 검색
+  searchForAccommodationSuccess: false,
+  searchForAccommodationError: false,
+};
+```
+
+<br />
+<br />
+
+> **과도한 props 처리**
+
+<p align="justify">
+Nav 구조 특성상 하위 컴포넌트에 전달해야 하는 props 의 수가 많았습니다. 
+<br /> 하나의 상태가 추가되면 그에 따라 하위 컴포넌트 전체에 전달하여야 했고, 가끔 실수도 많이 하게 되어 애를 먹었던 기억이 있습니다.<br />
+추후 redux 를 도입하여 상태값을 직접 전달하는 방식으로 하는 것이 어떨까 생각하였고, 실제로 상태 관리가 편리해짐을 느낄 수 있었습니다.
+</p>
+
+<br />
+
+> **Before**
+
+```js
+// Nav
+const Nav = () => {
+  // 생략
+  // ...
+  return (
+    <>
+      <div>
+        <BeforeSearch
+          toggleNav={toggleNav}
+          toggleNavbar={toggleNavbar}
+          startDate={startDate}
+          endDate={endDate}
+          location={location}
+          guest={guest}
+          setLocation={setLocation}
+          onChange={onChange}
+          increseNum={increseNum}
+          decreseNum={decreseNum}
+          profileModal={profileModal}
+          setProfileModal={setProfileModal}
+          clickUserInfo={clickUserInfo}
+          isToken={isToken}
+          setIsToken={setIsToken}
+          modalIsOpen={modalIsOpen}
+          setModalIsOpen={setModalIsOpen}
+          switchModal={switchModal}
+          reroad={reroad}
+        />
+        {/** 생략 **/}
+      )
+};
+```
+
+```js
+// BeforeSearch.js
+const BeforeSearch = ({
+  startDate,
+  endDate,
+  location,
+  guest,
+  toggleNavbar,
+  toggleNav,
+  profileModal,
+  setProfileModal,
+  clickUserInfo,
+  isToken,
+  setIsToken,
+  modalIsOpen,
+  setModalIsOpen,
+  switchModal,
+  reroad,
+}) => {
+  // ...
+  const swtichProfileModal = {
+    1: (
+      <ProfileContainer
+        profileModal={profileModal}
+        setProfileModal={setProfileModal}
+        modalIsOpen={modalIsOpen}
+        setModalIsOpen={setModalIsOpen}
+        switchModal={switchModal}
+        isToken={isToken}
+        setIsToken={setIsToken}
+      />
+    ),
+    2: (
+      <ProfileLoginContainer
+        profileModal={profileModal}
+        setProfileModal={setProfileModal}
+        isToken={isToken}
+        setIsToken={setIsToken}
+        switchModal={switchModal}
+      />
+    ),
+  };
+};
+```
+
+<p align="justify">
+점점 props 로 전달해야 하는 상황이 늘어나 관리하기가 힘들었었습니다.
+</p>
+
+<br />
+
+> **After**
+
+```js
+// 컴포넌트가 좀 더 직관적이고 가독성이 좋아졌습니다.
+const Nav = () => {
+  const dispatch = useDispatch();
+  const { isToken } = useSelector(state => state.nav);
+  const modalRef = useRef();
+
+  useEffect(() => {
+    if (localStorage.getItem('Token')) {
+      dispatch({
+        type: TOKEN_EXIST,
+      });
+    } else {
+      dispatch({
+        type: TOKEN_DELETE,
+      });
+    }
+  }, [isToken]);
+
+  return (
+    <>
+      <div>
+        <BeforeSearch />
+        <OnClickSearch modalRef={modalRef} />
+      </div>
+      {localStorage.getItem('key') ? <SignModal /> : <LoginModal />}
+    </>
+  );
+};
+```
+
+```js
+// BeforeSearch.js
+const BeforeSearch = () => {
+  const dispatch = useDispatch();
+  const { isToken, isClickUserInfoButton, location, guestCount } = useSelector(
+    state => state.nav
+  );
+  const { start, end } = useSelector(state => state.nav.date);
+  const { isClickSearch } = useSelector(state => state.search); // reducer 내 store 에서 가져옵니다.
+
+  const swtichProfileModal = {
+    1: <ProfileContainer />,
+    2: <ProfileLoginContainer />,
+  };
+  // ...
+  // 이 외 다른 컴포넌트 역시 훨씬 상태관리가 용이해졌습니다.
+};
+```
+
+<p align="justify">
+reducer 내 코드량이 증가하였지만, Nav 컴포넌트 뿐 아니라 밑 하위 컴포넌트 역시 훨씬 상태를 관리하기 용이해졌고, 상태를 가져오는 것도 편리해졌습니다.
+</p>
+
+<br />
+<br />
+
+> **Redux-saga 활용(middleware) action 분기 처리하기 **
+
+<p align="justify">
+서버와 데이터를 주고 받는 과정에서 전송이 실패하는 경우(error) 역시 구현해주었어야 했는데, 프로젝트 진행당시에는 이를 구현하지 못했습니다.
+<br />간단하기는 해도 에러가 발생했을 경우에 대해서도 따져야 겠다고 생각하였고, 공부중이었던 Redux-Saga 를 활용하여 action 을 분기처리 하였습니다. <br />
+검색에 대한 요청을 보내고, 이 요청에 대해 saga 가 받아 서버와 데이터를 주고 받으며, 이 데이터의 결과에 따라 성공 과 실패 각각의 action 을 reducer 로 전달합니다.
+</p>
+
+<br />
+
+> **Before**
+
+```js
+const Search = () => {
+  // 생략
+  const toSearchUserInfo = e => {
+    e.stopPropagation();
+
+    const startDay = startDate
+      ? `&check_in=${toStringByFormatting(startDate, '-')}`
+      : '';
+    const endDay = endDate
+      ? `&check_out=${toStringByFormatting(endDate, '-')}`
+      : '';
+    const selectLocation = location ? `&address=${location}` : '';
+    const totalGuest = guest ? `&maximum_occupancy=${guest}` : '';
+
+    navigate(`/list?${startDay}${endDay}${selectLocation}${totalGuest}`); // 리스트 페이지로 이동
+
+    // 데이터를 전송하기
+    fetch(
+      `${BASE_URL}/rooms?${startDay}${endDay}${selectLocation}${totalGuest}`
+    )
+      .then(res => res.json())
+      .then(data => console.log(data));
+    setDateModalIsOpen(false);
+    setLocationModalIsOpen(false);
+    setGuestModalIsOpen(false);
+    setCurrentId(0);
+    setToggleNavbar(true);
+  };
+};
+```
+
+<br />
+
+> **After**
+
+```js
+// 요청 보내기
+const toSearchUserInfo = e => {
+  e.stopPropagation();
+
+  const startDay = start ? `&check_in=${toStringByFormatting(start, '-')}` : '';
+  const endDay = end ? `&check_out=${toStringByFormatting(end, '-')}` : '';
+  const selectLocation = location ? `&address=${location}` : '';
+  const totalGuest = guestCount ? `&maximum_occupancy=${guestCount}` : '';
+
+  // 요청을 reducer 와 saga 에 데이터와 함께 보냅니다.
+  dispatch(
+    searchAccommodationRequest({
+      startDay: startDay,
+      endDay: endDay,
+      selectLocation: selectLocation,
+      totalGuest: totalGuest,
+    })
+  );
+
+  navigate(`/list?${startDay}${endDay}${selectLocation}${totalGuest}`);
+};
+
+// 요청 이후 saga 에서 판단
+// 생략....
+
+function searchAPI(data) {
+  // 서버에 데이터를 전송하기
+  return axios.get(
+    `${BASE_URL}/rooms?${data.startDay}${data.endDay}${data.selectLocation}${data.totalGuest}`
+  );
+}
+// 요청에 대해 성공과 실패로 분기처리 합니다.
+function* searchAccommodation(action) {
+  try {
+    const result = yield call(searchAPI, action.data);
+    yield put({
+      // 데이터가 성공적으로 전달될 시
+      type: SEARCH_ACCOMMODATION_SUCCESS,
+      data: result,
+    });
+  } catch (err) {
+    yield put({
+      // 실패할 시
+      type: SEARCH_ACCOMMODATION_FAILURE,
+      error: err.response.data,
+    });
+  }
+}
+```
+
+<p align="justify">
+요청을 통해 saga 에서 요청 성공과 실패에 대해 다시 reducer 로 dispatch 하여 reducer 에서 각각의 타입을 받습니다.
+</p>
+
+<br />
 <br />
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/rainbow.png)
